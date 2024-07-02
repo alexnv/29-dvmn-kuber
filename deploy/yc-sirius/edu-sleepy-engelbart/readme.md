@@ -1,5 +1,7 @@
 # # Запуск в кластере Yandex Cloud
 
+(параметры сервера)[https://sirius-env-registry.website.yandexcloud.net/edu-sleepy-engelbart.html]
+
 ### Сборка приложения
 
 Для сборки и отправки в репозитарий [hub.docker.com](hub.docker.com) необходимо запустить, в папке `backend_main_django` следующий скрипт (заменив `namespace_in_dockerhub` на свой логин в `dockerhub`).
