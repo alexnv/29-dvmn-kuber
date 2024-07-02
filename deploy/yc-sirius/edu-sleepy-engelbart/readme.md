@@ -46,6 +46,7 @@ kubectl apply -f ./migrate.yml
 ```shell
 kubectl apply -f ./deployment.yml
 kubectl apply -f ./service.yaml
+kubectl apply -f ./clearsessions.yaml
 ```
 
 Сайт будет доступен по адресу: [https://edu-sleepy-engelbart.sirius-k8s.dvmn.org](https://edu-sleepy-engelbart.sirius-k8s.dvmn.org/)

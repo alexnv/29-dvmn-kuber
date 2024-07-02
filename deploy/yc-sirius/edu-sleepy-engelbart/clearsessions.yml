@@ -13,12 +13,28 @@ spec:
       template:
         spec:
           containers:
-          - name: clearsession
-            image: django-app
-            imagePullPolicy: IfNotPresent
-            envFrom:
-            - configMapRef:
-                name: django-config
-            command: ["python", "manage.py",  "clearsessions"]
+            - name: django-app
+              image: alexnv/k8s-dvmn:lastest
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: DATABASE_URL
+                  value: "postgres://$(username):$(password)@$(host):$(port)/$(name)?sslmode=verify-full&sslrootcert=/opt/.postgresql/root.crt"
+              envFrom:
+                - secretRef:
+                    name: postgres
+                - secretRef:
+                    name: django-secret
+              volumeMounts:
+                - name: pg-root-cert
+                  mountPath: "/opt/.postgresql"
+                  readOnly: true
+              command:
+                - python
+                - manage.py
+                - clearsessions
+          volumes:
+              - name: pg-root-cert
+                secret:
+                  secretName: pg-root-cert
           restartPolicy: OnFailure
       backoffLimit: 4
