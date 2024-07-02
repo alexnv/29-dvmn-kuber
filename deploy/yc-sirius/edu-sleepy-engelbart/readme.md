@@ -1,25 +1,51 @@
-# Django site
+# # Запуск в кластере Yandex Cloud
 
-Докеризированный сайт на Django для экспериментов с Kubernetes.
+### Сборка приложения
 
-Внутри конейнера Django запускается с помощью Nginx Unit, не путать с Nginx. Сервер Nginx Unit выполняет сразу две функции: как веб-сервер он раздаёт файлы статики и медиа, а в роли сервера-приложений он запускает Python и Django. Таким образом Nginx Unit заменяет собой связку из двух сервисов Nginx и Gunicorn/uWSGI. [Подробнее про Nginx Unit](https://unit.nginx.org/).
+Для сборки и отправки в репозитарий [hub.docker.com](hub.docker.com) необходимо запустить, в папке `backend_main_django` следующий скрипт (заменив `namespace_in_dockerhub` на свой логин в `dockerhub`).
 
-
-## Серверная инфраструктура: [edu-sleepy-engelbart](https://sirius-env-registry.website.yandexcloud.net/edu-sleepy-engelbart.html)
-Подключиться к кластеру можно например через [Lens](https://k8slens.dev/)
-
-Установите [Helm](https://helm.sh/)
-
-Добавьте Bitnami
+Создание образа:
+```shell
+docker build -t <namespace_in_dockerhub>/k8s-dvmn:lastest .
 ```
-helm repo add bitnami https://charts.bitnami.com/bitnami
+Загрузка в dockerhub:
+```shell
+docker pull <namespace_in_dockerhub>/k8s-dvmn:lastest
 ```
-## Деплой приложения
+### Установка secrets - переменных окружения и SSL сертификата
 
-Примените манифесты:
+Проверьте, возможно уже есть `Secret` с сертификатом для подключения к базе данных, в этом случае можно пропустить шаг с установкой сертификата и созданием Secret:
+
+```shell
+kubectl get secret
+kubectl get secret pg-root-cert -o yaml
 ```
-kubectl apply -f simple-pod.yaml
+
+#### Установка рутового SSL сертификата для подключения к Postgres
+Для верификации сервера при шифровании соединения необходимо поместить в secrets рутовый сертификат Яндекса. 
+Для этого его необоходимо сначала [скачать](https://storage.yandexcloud.net/cloud-certs/CA.pem) со страницы [справки](https://yandex.cloud/ru/docs/managed-postgresql/operations/connect). 
+Затем поместить в secrets:
+```shell
+kubectl create secret generic pg-root-cert --from-file=<path_to_cert>root.crt
 ```
 
+#### Переменные окружения
+В манифест `secrets.yaml`, надо прописать следующие данные:
+ - необходимо генерировать случайную строку для переменной `SECRET_KEY` и задать `DEBUG` режим.
+ - указать в списке `ALLOWED_HOSTS` ваш домен.
 
-## [Ссылка на сервер](https://edu-sleepy-engelbart.sirius-k8s.dvmn.org/)
+### Запуск приложения
+
+Перед запуском приложения нужно применить миграции. Для применения миграций к базе при обновлении приложения используется следующая команда:
+```shell
+kubectl apply -f ./secrets.yaml
+kubectl apply -f ./migrate.yml
+```
+
+Для запуска приложения нужно создать объект Deployment:
+```shell
+kubectl apply -f ./deployment.yml
+kubectl apply -f ./service.yaml
+```
+
+Сайт будет доступен по адресу: [https://edu-sleepy-engelbart.sirius-k8s.dvmn.org](https://edu-sleepy-engelbart.sirius-k8s.dvmn.org/)

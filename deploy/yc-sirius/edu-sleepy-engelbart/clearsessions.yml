@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: django-clearsession
+  namespace: edu-sleepy-engelbart
+spec:
+  schedule: "0 0 * * *"
+  startingDeadlineSeconds: 60
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 100
+      template:
+        spec:
+          containers:
+          - name: clearsession
+            image: django-app
+            imagePullPolicy: IfNotPresent
+            envFrom:
+            - configMapRef:
+                name: django-config
+            command: ["python", "manage.py",  "clearsessions"]
+          restartPolicy: OnFailure
+      backoffLimit: 4
