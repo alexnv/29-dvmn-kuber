@@ -14,7 +14,38 @@ docker build -t <namespace_in_dockerhub>/k8s-dvmn:lastest .
 ```shell
 docker pull <namespace_in_dockerhub>/k8s-dvmn:lastest
 ```
-### Установка secrets - переменных окружения и SSL сертификата
+
+## Серверная инфраструктура: [edu-sleepy-engelbart](https://sirius-env-registry.website.yandexcloud.net/edu-sleepy-engelbart.html)
+
+Подключиться к кластеру можно например через [Lens](https://k8slens.dev/)
+
+Установите [Helm](https://helm.sh/)
+
+Добавьте Bitnami
+```
+helm repo add bitnami https://charts.bitnami.com/bitnami
+```
+
+Создайте манифест файл secrets.yaml:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: django-secret
+  namespace: edu-sleepy-engelbart
+  labels:
+    app.kubernetes.io/name: django-secret
+    app.kubernetes.io/env: dev
+type: Opaque
+stringData:
+  SECRET_KEY: your_allowed-hosts
+  ALLOWED_HOSTS: secret-key
+  DEBUG: "False"
+  DATABASE_URL: "postgres://$(username):$(password)@$(host):$(port)/$(name)?sslmode=verify-full&sslrootcert=/opt/.postgresql/root.crt"
+```
+
+#### Установка secrets - переменных окружения и SSL сертификата
 
 Проверьте, возможно уже есть `Secret` с сертификатом для подключения к базе данных, в этом случае можно пропустить шаг с установкой сертификата и созданием Secret:
 
@@ -31,10 +62,20 @@ kubectl get secret pg-root-cert -o yaml
 kubectl create secret generic pg-root-cert --from-file=<path_to_cert>root.crt
 ```
 
-#### Переменные окружения
-В манифест `secrets.yaml`, надо прописать следующие данные:
- - необходимо генерировать случайную строку для переменной `SECRET_KEY` и задать `DEBUG` режим.
- - указать в списке `ALLOWED_HOSTS` ваш домен.
+#### При первом запуске проекта создайте суперпользователя:
+Посмотрите имя подов приложения:
+```shell-session
+kubectl get pods
+```
+Подключитесь к любому из подов:
+```shell-session
+kubectl exec -it <имя-пода> -- /bin/bash
+```
+
+Создайте суперпользователя:
+```shell-session
+python manage.py createsuperuser
+```
 
 ### Запуск приложения
 
