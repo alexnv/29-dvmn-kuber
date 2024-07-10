@@ -16,9 +16,6 @@ spec:
             - name: django-app
               image: alexnv/k8s-dvmn:lastest
               imagePullPolicy: IfNotPresent
-              env:
-                - name: DATABASE_URL
-                  value: "postgres://$(username):$(password)@$(host):$(port)/$(name)?sslmode=verify-full&sslrootcert=/opt/.postgresql/root.crt"
               envFrom:
                 - secretRef:
                     name: postgres
