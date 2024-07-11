@@ -26,6 +26,62 @@ docker pull <namespace_in_dockerhub>/k8s-dvmn:lastest
 helm repo add bitnami https://charts.bitnami.com/bitnami
 ```
 
+Разверните PostgreSQL в кластере, при необходимости:
+```shell
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install postgres bitnami/postgresql
+```
+В качестве хоста БД используйте:
+```
+postgres.default.svc.cluster.local
+```
+
+Добавьте его в `host` файла `secrets-pg.yaml`.
+
+Сохраните пароль в переменной окружения `POSTGRES_PASSWORD`:
+
+```bash
+export POSTGRES_PASSWORD=$(kubectl get secret --namespace default postgress-secret -o jsonpath="{.data.password}" | base64 -d)
+```
+
+Чтобы подключиться к вашей базе данных, выполните следующую команду:
+
+```bash
+kubectl run postgres-postgresql-client --rm --tty -i --restart='Never' --namespace default --image docker.io/bitnami/postgresql:16.1.0-debian-11-r20 --env="PGPASSWORD=$POSTGRES_PASSWORD" \
+      --command -- psql --host postgres-postgresql -U postgres -d postgres -p 5432
+```
+
+Создайте БД и пользователя в PostgreSQL:
+
+```sql
+create database Имя_вашей_бд;
+create user ваш_логин with encrypted password 'пароль_пользователя';
+grant all privileges on database Имя_вашей_бд to ваш_логин;
+ALTER DATABASE Имя_вашей_бд OWNER TO ваш_логин;
+```
+
+Замените `Имя_вашей_бд` и `ваш_логин` на соответствующие значения.
+
+Создайте манифест файл secrets-pg.yaml:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgress-secret
+  namespace: edu-sleepy-engelbart
+  labels:
+    app.kubernetes.io/name: postgress-secret
+    app.kubernetes.io/env: dev
+type: Opaque
+stringData:
+  username: ""
+  password: ""
+  host: ""
+  port: ""
+  name: ""
+```
+
+
 Создайте манифест файл secrets.yaml:
 
 ```yaml
